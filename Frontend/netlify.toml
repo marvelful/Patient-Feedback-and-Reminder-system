@@ -1,0 +1,14 @@
+[build]
+  publish = "dist"
+  command = "npm install --include=dev && npm run build"
+
+[build.environment]
+  NPM_FLAGS = "--no-corepack"
+
+[context.production.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

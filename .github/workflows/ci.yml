@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: feedbackdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+
+      - name: Install dependencies
+        working-directory: ./Backend
+        run: |
+          poetry config virtualenvs.create false
+          poetry install
+
+      - name: Run formatters (black, isort)
+        working-directory: ./Backend
+        run: |
+          poetry run black --check .
+          poetry run isort --check-only .
+
+      - name: Run type checker (mypy)
+        working-directory: ./Backend
+        run: |
+          poetry run mypy .
+
+      - name: Run tests
+        working-directory: ./Backend
+        env:
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/feedbackdb
+        run: |
+          poetry run pytest
